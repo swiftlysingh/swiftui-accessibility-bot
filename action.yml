@@ -3,10 +3,10 @@ description: 'Auto-applies LLM accessibility improvements to SwiftUI views and c
 author: 'Your Name'
 
 inputs:
-  openai-api-key:
+  openai_api_key:
     description: 'OpenAI API Key'
     required: true
-  github-token:
+  github_token:
     description: 'GitHub token for pushing and PR creation'
     required: true
     default: ${{ github.token }}
