@@ -1,0 +1,26 @@
+name: 'SwiftUI Accessibility Bot'
+description: 'Auto-applies LLM accessibility improvements to SwiftUI views and creates a PR.'
+author: 'Your Name'
+
+inputs:
+  openai-api-key:
+    description: 'OpenAI API Key'
+    required: true
+  github-token:
+    description: 'GitHub token for pushing and PR creation'
+    required: true
+    default: ${{ github.token }}
+
+outputs:
+  branch-name:
+    description: 'Branch created for the PR'
+  files-modified:
+    description: 'Number of files modified'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+
+branding:
+  icon: 'git-pull-request'
+  color: 'red'

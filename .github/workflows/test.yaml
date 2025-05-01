@@ -1,0 +1,20 @@
+name: Test SwiftUI Accessibility Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-bot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Accessibility Bot
+        uses: ./
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
