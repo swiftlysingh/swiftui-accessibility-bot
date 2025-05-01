@@ -2,19 +2,19 @@
 set -e
 
 # Debug: print environment variable presence
-if [ -z "$OPENAI_API_KEY" ]; then
+if [ -z "$INPUT_OPENAI_API_KEY" ]; then
   echo "::error::INPUT_OPENAI_API_KEY is not set!"
 else
   echo "INPUT_OPENAI_API_KEY is set."
 fi
-if [ -z "$GITHUB_TOKEN" ]; then
-  echo "::error::GITHUB_TOKEN is not set!"
+if [ -z "$INPUT_GITHUB_TOKEN" ]; then
+  echo "::error::INPUT_GITHUB_TOKEN is not set!"
 else
   echo "INPUT_GITHUB_TOKEN is set."
 fi
 
-export OPENAI_API_KEY="$OPENAI_API_KEY"
-export GITHUB_TOKEN="$GITHUB_TOKEN"
+export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
+export GITHUB_TOKEN="$INPUT_GITHUB_TOKEN"
 
 # Find all SwiftUI files that import SwiftUI and have a struct/class/enum (more inclusive)
 FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
