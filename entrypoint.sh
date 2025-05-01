@@ -1,11 +1,25 @@
 #!/bin/sh -l
 set -e
 
-export OPENAI_API_KEY="${INPUT_OPENAI_API_KEY:-$INPUT_OPENAI-API-KEY}"
-export GITHUB_TOKEN="${INPUT_GITHUB_TOKEN:-$INPUT_GITHUB-TOKEN}"
+# Debug: print environment variable presence
+if [ -z "$INPUT_OPENAI_API_KEY" ]; then
+  echo "::error::INPUT_OPENAI_API_KEY is not set!"
+else
+  echo "INPUT_OPENAI_API_KEY is set."
+fi
+if [ -z "$INPUT_GITHUB_TOKEN" ]; then
+  echo "::error::INPUT_GITHUB_TOKEN is not set!"
+else
+  echo "INPUT_GITHUB_TOKEN is set."
+fi
 
-# Find all SwiftUI view files (simple heuristic)
-FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI' | xargs grep -l 'struct .*: View')
+export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
+export GITHUB_TOKEN="$INPUT_GITHUB_TOKEN"
+
+# Find all SwiftUI files that import SwiftUI and have a struct/class/enum (more inclusive)
+FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
+
+echo "SwiftUI files found: $FILES"
 
 MODIFIED=0
 
