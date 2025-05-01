@@ -1,7 +1,8 @@
 #!/bin/sh -l
 set -e
 
-export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
+export OPENAI_API_KEY="${INPUT_OPENAI_API_KEY:-$INPUT_OPENAI-API-KEY}"
+export GITHUB_TOKEN="${INPUT_GITHUB_TOKEN:-$INPUT_GITHUB-TOKEN}"
 
 # Find all SwiftUI view files (simple heuristic)
 FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI' | xargs grep -l 'struct .*: View')

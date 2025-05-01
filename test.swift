@@ -1,113 +1,75 @@
-import Foundation
 import SwiftUI
+import Charts
 
-@Observable
-class HomeViewModel {
-  var totalAmount: Double = 0
-  var utilization: Double = 0
-  var selectedTimeframe: String = "This Month"
-  var selectedCategory: Category?
-  var currentPage = 0
-  var showingTransactionSheet = false
-  var showImporting = false
+struct ChartView: View {
+  let categories: [Category]
+  let onCategorySelected: (Category) -> Void
 
-  var categories: [Category] = []
-  var notices: [Notice] = []
-  var noticesInTabs: [Notice] = []
-  var accountSummary: AccountSummary?
+  private let minPercentageForOverlay: Double = 0.1
 
-  var statement: CreditCardStatement?
-
-  var fileDetails: [FileDetails] = []
-
-  var bounceValue = 0
-  var currentNoticeIndex = 0
-
-  let timer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
-
-  var isViewingTotal = false
-
-  init() {
-	loadMockData()
-//	getStatementPDFs()
+  private var totalAmount: Double {
+	categories.reduce(0) { $0 + $1.amount }
   }
 
-  private func loadMockData() {
-	do {
-	  statement = try MockDataLoader.loadMockData()
-	  processTransactions()
-	} catch {
-	  print("Error loading mock data: \(error)")
-	}
+  private var smallCategories: [Category] {
+	categories.filter { $0.amount / totalAmount < minPercentageForOverlay }
   }
 
-  private func processTransactions() {
-	guard let categories = statement?.card.categories else { return }
+  var body: some View {
+	VStack {
+	  Chart(categories) { category in
+		BarMark(
+		  x: .value("Amount", category.amount)
+		)
+		.foregroundStyle(category.color)
+	  }
+	  .chartPlotStyle { plotArea in
+		plotArea
+		  .background(Color(.systemFill))
+		  .cornerRadius(8)
+	  }
+	  .chartXScale(domain: 0...totalAmount)
+	  .chartXAxis(.hidden)
+	  .frame(height: 25)
+	  .chartOverlay { proxy in
+		GeometryReader { geometry in
+		  Rectangle().fill(.clear).contentShape(Rectangle())
+			.onTapGesture { location in
+			  let plotFrame = geometry[proxy.plotFrame!]
+			  let xLocation = location.x - plotFrame.minX
+			  guard xLocation >= 0, xLocation <= plotFrame.width else { return }
 
-	self.categories = categories.sorted { first, second in
-	  return first.amount > second.amount
-	}
-	self.notices = statement?.card.notices ?? []
-	noticesInTabs = notices.filter({ $0.severity >= 1 })
-	totalAmount = statement?.card.transactions.totals.debit ?? 0
-	accountSummary = statement?.card.accountSummary
-	utilization = (
-	  accountSummary!
-		.totalDue / (accountSummary?.creditLimit ?? .greatestFiniteMagnitude)
-	) * 100
-  }
+			  let xValue = proxy.value(atX: xLocation) ?? 0
 
-  func selectCategory(_ category: Category) {
-	isViewingTotal = false
-	selectedCategory = category
-	showingTransactionSheet = true
-  }
-
-  func addTransaction() {
-	showingTransactionSheet = true
-  }
-
-  func uploadNewStatements() {
-	showImporting = true
-  }
-
-  func fileSelectionHandler(result: Result<URL, any Error>) {
-	  switch(result) {
-		case .success(let fileURL):
-		  print(fileURL.absoluteString)
-		  guard fileURL.startAccessingSecurityScopedResource() else {
-			// Handle error - can't access the resource
-			return
-		  }
-
-		  // Now you can open and read the file
-		  Task {
-			do {
-			  let data = try Data(contentsOf: fileURL)
-
-			  try await AppWrite.shared
-				.uploadPDF(fileData: data, with: fileURL.lastPathComponent)
-
-
-			} catch {
-			  print("Error with file handling: \(error)")
+			  var accumulated: Double = 0
+			  for category in categories {
+				accumulated += category.amount
+				if xValue <= Int(accumulated) {
+				  onCategorySelected(category)
+				  break
+				}
+			  }
 			}
-		  }
-
-
-		case .failure(let error):
-		  print("\(error) \n While importing pdf")
-
-	}
-  }
-
-  func getStatementPDFs() {
-	Task {
-	  do {
-		fileDetails = try await AppWrite.shared.getPDFs()
-	  } catch {
-		print("Error getting files: \(error)")
+		}
 	  }
 	}
   }
+}
+
+#Preview {
+  ChartView(
+	categories: [
+	  Category(
+		name: "Automotive",
+		categoryColor: CategoryColor(r: 255, g: 99, b: 71, alpha: 1.0),
+		amount: 1250
+	  ),
+	  Category(
+		name: "Automotive",
+		categoryColor: CategoryColor(r: 255, g: 99, b: 71, alpha: 1.0),
+		amount: 1250
+	  )
+	],
+	onCategorySelected: { _ in }
+  )
 }
