@@ -17,26 +17,52 @@ def extract_class_name(file_content):
 
 def generate_accessibility_prompt(file_name, class_name, file_content):
     return f"""
-You are a senior SwiftUI engineer and expert in iOS accessibility. Your task is to audit the provided SwiftUI view for accessibility issues, but you are only allowed to add SwiftUI view modifiers that start with `.accessibility` (such as `.accessibilityLabel`, `.accessibilityHint`, `.accessibilityIdentifier`, `.accessibilityAddTraits`, etc.).
+You are a senior SwiftUI engineer and expert in iOS accessibility. Your task is to audit the provided SwiftUI view for accessibility issues, but you are only allowed to add the following SwiftUI accessibility modifiers:
+- .accessibilityLabel(_:)
+- .accessibilityValue(_:)
+- .accessibilityHint(_:)
+- .accessibilityIdentifier(_:)
+- .accessibilityAddTraits(_:)
+- .accessibilityRemoveTraits(_:)
+- .accessibilitySortPriority(_:)
+- .accessibilityHidden(_:)
+- .accessibilityElement(children:)
+- .accessibilityInputLabels(_:)
+- .accessibilityCustomAction(_:)
+- .accessibilityRespondsToUserInteraction(_:)
+- .accessibilityRepresentation(_:)
+- .accessibilityRotorEntry(_:)
+- .accessibilityRotor(_:)
+- .accessibilityAction(_:)
+- .accessibilityAdjustableAction(_:)
+- .accessibilityScrollAction(_:)
+- .accessibilityFocused(_:)
+- .accessibilityShowsLargeContentViewer(_:)
+- .accessibilityTextContentType(_:)
+- .accessibilityHeading(_:)
+- .accessibilityLabeledPair(_:)
+- .accessibilityReadingOrder(_:)
+- .accessibilityZoomAction(_:)
+- .accessibilityInputActions(_:)
 
-**You must not remove, modify, or add any other code, view modifiers, or logic. Only append .accessibility* modifiers to existing views as needed.**
+**You must not remove, modify, or add any other code, view modifiers, or logic. Only append these accessibility modifiers to existing views as needed.**
 
 ## Task Overview:
-First, **identify and list all missing or insufficient .accessibility* modifiers** in the provided SwiftUI view.
-- Only consider issues that can be addressed by adding .accessibility* modifiers.
+First, **identify and list all missing or insufficient accessibility modifiers** in the provided SwiftUI view (from the list above).
+- Only consider issues that can be addressed by adding the listed accessibility modifiers.
 - Ignore all other types of accessibility or code issues.
 
 ## Accessibility Refactor Objectives:
-After identifying missing .accessibility* modifiers:
-1. Regenerate the SwiftUI view, adding only the necessary .accessibility* modifiers to address the issues you found.
-2. Do not remove or change any existing code, modifiers, or structure.
-3. Do not add any other types of modifiers or code.
-4. Add in-line comments explaining each .accessibility* modifier you add.
+After identifying missing accessibility modifiers:
+1. For each required modifier, output the following format:
+   After line X, add:
+       .accessibilityLabel("...") // comment
+   (or the appropriate modifier from the list above)
+2. Only output the minimal set of changes needed, in the order they should be applied.
+3. Do not output the full file, do not remove or modify any existing code, and do not add any other commentary.
 
 ## Output Requirements:
-1. **First**: List all missing or insufficient .accessibility* modifiers found in the original SwiftUI view.
-2. **Then**: Return the fully updated SwiftUI code, with only .accessibility* modifiers added and in-line comments for each addition.
-3. **Output the updated view ONLY** — do not summarize or add additional commentary after the code.
+- Only output the minimal patch as described above.
 
 ## Provided File to Audit and Refactor:
 🔽 SwiftUI view to refactor:
@@ -65,7 +91,7 @@ def main():
     response = client.chat.completions.create(
         model="gpt-4-0125-preview",
         messages=[
-            {"role": "system", "content": "You are a senior SwiftUI engineer and expert in iOS accessibility. First, list all missing or insufficient .accessibility* modifiers found in the provided SwiftUI view. Then, return the fully updated SwiftUI code with only .accessibility* modifiers added and in-line comments explaining each addition. Do not summarize or add commentary after the code."},
+            {"role": "system", "content": "You are a senior SwiftUI engineer and expert in iOS accessibility. First, list all missing or insufficient .accessibility* modifiers found in the provided SwiftUI view. Then, return the minimal patch-style instructions for adding the required .accessibility* modifiers, specifying the line number after which each modifier should be inserted and the code to insert. Do not output the full file, remove any code, or add commentary."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
