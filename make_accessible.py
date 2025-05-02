@@ -17,53 +17,27 @@ def extract_class_name(file_content):
 
 def generate_accessibility_prompt(file_name, class_name, file_content):
     return f"""
-You are a senior SwiftUI engineer and expert in iOS accessibility. You specialize in refactoring SwiftUI views to conform to Apple's Human Interface Guidelines (HIG) and WCAG 2.1, with full support for VoiceOver, Voice Control, keyboard navigation, Dynamic Type, Assistive Access, and UI testing best practices.
+You are a senior SwiftUI engineer and expert in iOS accessibility. Your task is to audit the provided SwiftUI view for accessibility issues, but you are only allowed to add SwiftUI view modifiers that start with `.accessibility` (such as `.accessibilityLabel`, `.accessibilityHint`, `.accessibilityIdentifier`, `.accessibilityAddTraits`, etc.).
+
+**You must not remove, modify, or add any other code, view modifiers, or logic. Only append .accessibility* modifiers to existing views as needed.**
+
 ## Task Overview:
-Before making any modifications to the provided SwiftUI view, **analyze the file** using a technique similar to `app.performAccessibilityAudit()` in UI tests.  
-First, **identify and list all accessibility violations** that would likely occur, organized by category:
-- **Control Violations**:
-  - Missing `.accessibilityLabel()`, `.accessibilityHint()`, or `.accessibilityIdentifier()`
-  - Interactive elements not focusable via keyboard (`.focusable(true)` missing)
-  - Inappropriate or missing `.accessibilityAddTraits()` (e.g., `.isButton`)
-- **Text Violations**:
-  - Text that does not scale with Dynamic Type
-  - Text clipping, truncation, or missing `.minimumScaleFactor()`
-- **Navigation & Structure Violations**:
-  - Visual order not matching VoiceOver reading order
-  - Grouped views missing `.accessibilityElement(children: .combine)`
-  - Missing `.accessibilitySortPriority(...)` for reading order management
-- **Assistive Access Violations**:
-  - Small tap targets (<44x44 points)
-  - Use of non-standard gestures or non-standard SwiftUI controls
-  - Layout breakage at large Dynamic Type sizes (e.g., `.extraExtraExtraLarge`)
----
-## Prompting Techniques to Use:
-- **Think step-by-step** (Chain of Thought) to find issues before fixing.
-- **Reflect and verify** your analysis against WCAG and HIG standards (Self-Consistency).
----
+First, **identify and list all missing or insufficient .accessibility* modifiers** in the provided SwiftUI view.
+- Only consider issues that can be addressed by adding .accessibility* modifiers.
+- Ignore all other types of accessibility or code issues.
+
 ## Accessibility Refactor Objectives:
-After identifying violations:
-1. Regenerate the SwiftUI view with **full accessibility support applied**.
-2. Ensure:
-   - All UI elements have meaningful `.accessibilityLabel()` and `.accessibilityHint()`.
-   - For example: Use hints like "Tap \\(answerChoice)" so the user can say "Tap Deep Dish Pizza."
-   - Visible label text appears at the beginning of custom accessibility labels if changed.
-   - Full support for Dynamic Type using `.font(.preferredFont(forTextStyle:))`, `.system(...) relativeTo:` or `.custom(..., relativeTo:)`.
-   - Keyboard navigation is fully supported using `.focusable(true)`.
-   - Layout does not break under large accessibility text settings.
----
-## Explainability Requirements:
-- For **each issue found**, cite the relevant WCAG 2.1 success criterion or HIG recommendation.
-- Explanations must be in **plain English**, suitable for junior developers and designers.
----
-## Ethical Requirements:
-- Accessible labels and hints must be **inclusive, unbiased, respectful**, and use **universal phrasing**.
----
+After identifying missing .accessibility* modifiers:
+1. Regenerate the SwiftUI view, adding only the necessary .accessibility* modifiers to address the issues you found.
+2. Do not remove or change any existing code, modifiers, or structure.
+3. Do not add any other types of modifiers or code.
+4. Add in-line comments explaining each .accessibility* modifier you add.
+
 ## Output Requirements:
-1. **First**: List all accessibility violations found in the original SwiftUI view.
-2. **Then**: Return the fully updated SwiftUI code, applying changes with **in-line comments** explaining each improvement.
+1. **First**: List all missing or insufficient .accessibility* modifiers found in the original SwiftUI view.
+2. **Then**: Return the fully updated SwiftUI code, with only .accessibility* modifiers added and in-line comments for each addition.
 3. **Output the updated view ONLY** — do not summarize or add additional commentary after the code.
----
+
 ## Provided File to Audit and Refactor:
 🔽 SwiftUI view to refactor:
 START_OF_FILE
@@ -91,7 +65,7 @@ def main():
     response = client.chat.completions.create(
         model="gpt-4-0125-preview",
         messages=[
-            {"role": "system", "content": "You are a senior SwiftUI engineer and expert in iOS accessibility. First, list all accessibility violations found in the provided SwiftUI view. Then, return the fully updated SwiftUI code with in-line comments explaining each improvement. Do not summarize or add commentary after the code."},
+            {"role": "system", "content": "You are a senior SwiftUI engineer and expert in iOS accessibility. First, list all missing or insufficient .accessibility* modifiers found in the provided SwiftUI view. Then, return the fully updated SwiftUI code with only .accessibility* modifiers added and in-line comments explaining each addition. Do not summarize or add commentary after the code."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
