@@ -5,7 +5,7 @@ from openai import OpenAI
 
 INJECTION_PATTERNS = [
     r"ignore.*instructions", r"disregard.*above", r"assistant.*role", r"user.*role",
-    r"only respond with", r"do not follow", r"system:.*", r"@role", r"::"
+    r"do not follow", r"@role"
 ]
 
 def is_potentially_injected(content: str) -> bool:
@@ -91,7 +91,7 @@ def main():
     response = client.chat.completions.create(
         model="gpt-4-0125-preview",
         messages=[
-            {"role": "system", "content": "Return Swift code only, no commentary or Markdown."},
+            {"role": "system", "content": "You are a senior SwiftUI engineer and expert in iOS accessibility. First, list all accessibility violations found in the provided SwiftUI view. Then, return the fully updated SwiftUI code with in-line comments explaining each improvement. Do not summarize or add commentary after the code."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
