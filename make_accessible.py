@@ -87,6 +87,11 @@ def main():
         temperature=0.2
     )
     generated_code = response.choices[0].message.content
+
+    print("=== GENERATED DIFF START ===")
+    print(generated_code)
+    print("=== GENERATED DIFF END ===")
+
     # Write the diff to a temporary file
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_patch:
         tmp_patch.write(generated_code)
