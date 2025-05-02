@@ -94,61 +94,74 @@ def main():
 
     lines = generated_code.splitlines()
     diff_lines = []
-    start_index = -1
-    plus_index = -1
+    start_marker_index = -1
+    plus_marker_index = -1
+    hunk_start_index = -1
     expected_filename = os.path.basename(swift_file)
 
-    # Find the start of the diff ('--- <filename>')
+    # Find the start ('--- ') and plus ('+++ ') markers, allowing for git's a/ b/ prefixes
     for i, line in enumerate(lines):
         if line.startswith('--- '):
-            start_index = i
-            # Look for the '+++ <filename>' line immediately after or separated by whitespace
-            for j in range(i + 1, len(lines)):
-                if lines[j].startswith('+++ '):
-                    plus_index = j
-                    break
-                elif lines[j].strip() != '':  # Stop if non-whitespace found before +++
-                    print(f"Non-whitespace line found between '---' and '+++': '{lines[j]}'")
-                    break
-            break  # Found the first potential '---'
+            # Basic check to see if it might be the filename we expect, ignoring a/ prefix
+            if expected_filename in line:
+                start_marker_index = i
+                # Look for the corresponding '+++ ' line
+                for j in range(i + 1, len(lines)):
+                    if lines[j].startswith('+++ '):
+                        if expected_filename in lines[j]:
+                            plus_marker_index = j
+                            break # Found +++
+                    elif lines[j].strip() != '': # Stop if non-whitespace found before +++
+                        break
+                if plus_marker_index != -1:
+                    break # Found both --- and +++ for the expected file
 
-    if start_index != -1 and plus_index != -1:
-        # Add the normalized '---' line
-        diff_lines.append(f'--- {expected_filename}')
-        # Add the normalized '+++' line
-        diff_lines.append(f'+++ {expected_filename}')
-
-        # Process lines after '+++'
-        for i in range(plus_index + 1, len(lines)):
-            line = lines[i]
-            # Check if the line looks like a valid diff line (hunk header, add, remove, context, or empty)
-            if (
-                line.startswith('@@') or
-                line.startswith('+') or
-                line.startswith('-') or
-                line.startswith(' ') or
-                line.strip() == ''  # Allow empty lines within the diff context/hunks
-            ):
-                diff_lines.append(line)
-            else:
-                # Stop if we encounter a line that doesn't fit the diff format
-                # This handles cases where the LLM adds commentary after the diff block
-                print(f"Stopping diff extraction at line {i+1} (does not match diff format): '{line}'")
+    if start_marker_index != -1 and plus_marker_index != -1:
+        # Now, find the first hunk header '@@ ... @@' after the '+++' line
+        for i in range(plus_marker_index + 1, len(lines)):
+            if lines[i].startswith('@@ '):
+                hunk_start_index = i
                 break
+
+        if hunk_start_index != -1:
+            # Add the normalized '---' and '+++' headers
+            diff_lines.append(f'--- {expected_filename}')
+            diff_lines.append(f'+++ {expected_filename}')
+
+            # Process lines starting from the first hunk header
+            for i in range(hunk_start_index, len(lines)):
+                line = lines[i]
+                # Check if the line looks like a valid diff line (hunk header, add, remove, context)
+                # Allow context lines starting with space OR tab
+                if (
+                    line.startswith('@@ ') or
+                    line.startswith('+') or
+                    line.startswith('-') or
+                    line.startswith(' ') or # Context line starts with a space
+                    line.startswith('\t')   # Allow context line starting with a tab
+                ):
+                    diff_lines.append(line)
+                elif line.strip() == '':
+                     # Include empty lines only if they are part of the diff content (e.g., between hunks)
+                     diff_lines.append(line)
+                else:
+                    # Stop if we encounter a line that doesn't fit the diff format
+                    print(f"Stopping diff extraction at line {i+1} (does not match diff format): '{line}'")
+                    break
+        else:
+            print(f"::error::Could not find hunk header '@@ ... @@' after '+++ {expected_filename}' line.", file=sys.stderr)
     else:
         print(f"::error::Could not find valid '--- {expected_filename}' and '+++ {expected_filename}' lines in the generated output.", file=sys.stderr)
-        # Proceeding with empty diff_lines will cause the next check to fail cleanly
 
     # Join the filtered lines
     filtered_diff = '\n'.join(diff_lines)
     # Add a newline at the end if filtered_diff is not empty, as patch often requires it
-    if filtered_diff:
+    if filtered_diff and not filtered_diff.endswith('\n'):
         filtered_diff += '\n'
 
     # Check if the result looks like a minimal valid diff structure
     if not filtered_diff.strip():
         print("::warning::Filtered diff is empty. No changes to apply.", file=sys.stderr)
-        # Exit cleanly if no diff was generated or extracted
         sys.exit(0)
 
     if not filtered_diff.startswith(f'--- {expected_filename}\n+++ {expected_filename}\n'):
@@ -160,10 +173,8 @@ def main():
     # Check for hunk headers if the diff is not just headers
     if len(diff_lines) > 2 and not any(line.startswith('@@') for line in diff_lines):
         print("::warning::Filtered diff does not contain any hunk headers ('@@'). It might be invalid.", file=sys.stderr)
-        # Decide whether to proceed or exit based on requirements. For now, allow it but warn.
 
     # Write the filtered diff to a temporary file
-    # Use a specific suffix for clarity
     with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".patch") as tmp_patch:
         tmp_patch.write(filtered_diff)
         tmp_patch_path = tmp_patch.name
