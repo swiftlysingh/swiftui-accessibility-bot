@@ -98,25 +98,39 @@ def main():
     plus_marker_index = -1
     hunk_start_index = -1
     expected_filename = os.path.basename(swift_file)
+    found_filename_from = None
+    found_filename_to = None
 
-    # Find the start ('--- ') and plus ('+++ ') markers, allowing for git's a/ b/ prefixes
+    # Find the first '--- ' and '+++ ' lines
     for i, line in enumerate(lines):
         if line.startswith('--- '):
-            # Basic check to see if it might be the filename we expect, ignoring a/ prefix
-            if expected_filename in line:
-                start_marker_index = i
-                # Look for the corresponding '+++ ' line
-                for j in range(i + 1, len(lines)):
-                    if lines[j].startswith('+++ '):
-                        if expected_filename in lines[j]:
-                            plus_marker_index = j
-                            break # Found +++
-                    elif lines[j].strip() != '': # Stop if non-whitespace found before +++
-                        break
-                if plus_marker_index != -1:
-                    break # Found both --- and +++ for the expected file
+            start_marker_index = i
+            # Extract filename from '---' line, removing potential prefixes and timestamp
+            match_from = re.match(r'--- (?:a/|b/)?([^\t\n]+)', line)
+            if match_from:
+                found_filename_from = match_from.group(1).strip()
+            # Look for the corresponding '+++ ' line immediately after or separated by whitespace
+            for j in range(i + 1, len(lines)):
+                if lines[j].startswith('+++ '):
+                    plus_marker_index = j
+                    # Extract filename from '+++' line
+                    match_to = re.match(r'\+\+\+ (?:a/|b/)?([^\t\n]+)', lines[j])
+                    if match_to:
+                        found_filename_to = match_to.group(1).strip()
+                    break
+                elif lines[j].strip() != '': # Stop if non-whitespace found before +++
+                    break
+            break # Found the first potential '---' line
 
-    if start_marker_index != -1 and plus_marker_index != -1:
+    # Validate found filenames
+    if start_marker_index == -1 or plus_marker_index == -1:
+        print(f"::error::Could not find '--- ' and '+++ ' lines in the generated output.", file=sys.stderr)
+    elif found_filename_from != expected_filename or found_filename_to != expected_filename:
+        print(f"::error::Filename mismatch in diff headers. Expected '{expected_filename}', but found '{found_filename_from}' and '{found_filename_to}'.", file=sys.stderr)
+        # Exit with error because the patch command will likely fail
+        sys.exit(1)
+    else:
+        # Filenames match, proceed to find hunk header
         # Now, find the first hunk header '@@ ... @@' after the '+++' line
         for i in range(plus_marker_index + 1, len(lines)):
             if lines[i].startswith('@@ '):
@@ -124,34 +138,31 @@ def main():
                 break
 
         if hunk_start_index != -1:
-            # Add the normalized '---' and '+++' headers
+            # Add the CORRECTED '---' and '+++' headers using the expected filename
             diff_lines.append(f'--- {expected_filename}')
             diff_lines.append(f'+++ {expected_filename}')
 
             # Process lines starting from the first hunk header
             for i in range(hunk_start_index, len(lines)):
                 line = lines[i]
-                # Check if the line looks like a valid diff line (hunk header, add, remove, context)
-                # Allow context lines starting with space OR tab
+                # Check if the line looks like a valid diff line
                 if (
                     line.startswith('@@ ') or
                     line.startswith('+') or
                     line.startswith('-') or
-                    line.startswith(' ') or # Context line starts with a space
-                    line.startswith('\t')   # Allow context line starting with a tab
+                    line.startswith(' ') or
+                    line.startswith('\t')
                 ):
                     diff_lines.append(line)
                 elif line.strip() == '':
-                     # Include empty lines only if they are part of the diff content (e.g., between hunks)
                      diff_lines.append(line)
                 else:
-                    # Stop if we encounter a line that doesn't fit the diff format
                     print(f"Stopping diff extraction at line {i+1} (does not match diff format): '{line}'")
                     break
         else:
             print(f"::error::Could not find hunk header '@@ ... @@' after '+++ {expected_filename}' line.", file=sys.stderr)
-    else:
-        print(f"::error::Could not find valid '--- {expected_filename}' and '+++ {expected_filename}' lines in the generated output.", file=sys.stderr)
+            # Exit with error as the diff is incomplete
+            sys.exit(1)
 
     # Join the filtered lines
     filtered_diff = '\n'.join(diff_lines)
