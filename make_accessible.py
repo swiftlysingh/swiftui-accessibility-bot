@@ -92,7 +92,6 @@ def main():
     print(generated_code)
     print("=== GENERATED DIFF END ===")
 
-    # Filter out lines that are not part of a valid unified diff
     diff_lines = []
     in_diff = False
     expected_filename = os.path.basename(swift_file)
@@ -100,17 +99,9 @@ def main():
         # Normalize diff headers to match the actual filename
         if line.startswith('--- '):
             in_diff = True
-            # Handle both '--- a/filename' and '--- filename'
-            if line.startswith('--- a/'):
-                line = f'--- {expected_filename}'
-            else:
-                line = f'--- {expected_filename}'
+            line = f'--- {expected_filename}'
         elif line.startswith('+++ '):
-            # Handle both '+++ b/filename' and '+++ filename'
-            if line.startswith('+++ b/'):
-                line = f'+++ {expected_filename}'
-            else:
-                line = f'+++ {expected_filename}'
+            line = f'+++ {expected_filename}'
         if in_diff:
             # Only allow valid diff lines or context lines
             if (
