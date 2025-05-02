@@ -35,6 +35,7 @@ for file in $FILES; do
 done
 
 if [ "$MODIFIED" -gt 0 ]; then
+  git config --global --add safe.directory /github/workspace
   git config --global user.name "github-actions[bot]"
   git config --global user.email "github-actions[bot]@users.noreply.github.com"
   BRANCH="bot/a11y-apply-$(date +%s)"
