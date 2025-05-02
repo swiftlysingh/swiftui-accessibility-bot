@@ -87,7 +87,7 @@ def main():
         temperature=0.2
     )
     generated_code = response.choices[0].message.content
-
+    print(response.choices)
     print("=== GENERATED DIFF START ===")
     print(generated_code)
     print("=== GENERATED DIFF END ===")
