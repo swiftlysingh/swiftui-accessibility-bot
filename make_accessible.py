@@ -98,6 +98,9 @@ def main():
     if not generated_code or is_potentially_injected(generated_code):
         print("::error::LLM output invalid or potentially injected.", file=sys.stderr)
         sys.exit(1)
+    # Log the generated patch to a file
+    with open("llm_patch.log", "w") as log_file:
+        log_file.write(generated_code)
     print(generated_code)
 
 if __name__ == "__main__":
