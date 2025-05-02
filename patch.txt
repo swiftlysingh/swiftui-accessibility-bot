@@ -1,0 +1,8 @@
+After line 10, add:
+    .accessibilityLabel("Total chart view") 
+
+After line 23, add:
+    .accessibilityHint("Tap a bar to select a category.")
+
+After line 36, add:
+    .accessibilityHidden(true)
