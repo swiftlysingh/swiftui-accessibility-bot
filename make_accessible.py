@@ -92,9 +92,33 @@ def main():
     print(generated_code)
     print("=== GENERATED DIFF END ===")
 
-    # Write the diff to a temporary file
+    # Filter out lines that are not part of a valid unified diff
+    diff_lines = []
+    in_diff = False
+    for line in generated_code.splitlines():
+        if line.startswith('--- ') or line.startswith('+++ '):
+            in_diff = True
+        if in_diff:
+            # Only allow valid diff lines or context lines
+            if (
+                line.startswith('--- ') or line.startswith('+++ ') or
+                line.startswith('@@') or
+                line.startswith('+') or
+                line.startswith('-') or
+                line.startswith(' ') or
+                line.strip() == ''
+            ):
+                diff_lines.append(line)
+    # Join the filtered lines
+    filtered_diff = '\n'.join(diff_lines)
+
+    if not filtered_diff.strip().startswith('---'):
+        print("::error::OpenAI did not return a valid unified diff.", file=sys.stderr)
+        sys.exit(1)
+
+    # Write the filtered diff to a temporary file
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_patch:
-        tmp_patch.write(generated_code)
+        tmp_patch.write(filtered_diff)
         tmp_patch_path = tmp_patch.name
 
     # Apply the patch
