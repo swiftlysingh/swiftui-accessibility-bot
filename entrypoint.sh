@@ -25,16 +25,12 @@ MODIFIED=0
 
 for file in $FILES; do
   export INPUT_SWIFT_FILE_PATH="$file"
-  if python /app/make_accessible.py > patch.txt; then
-    if python /app/apply_patch.py "$file" patch.txt; then
-      MODIFIED=$((MODIFIED+1))
-    else
-      echo "::warning::Failed to apply patch to $file"
-    fi
+  if python /app/make_accessible.py; then
+    echo "Accessibility patch applied for $file"
+    MODIFIED=$((MODIFIED+1))
   else
-    echo "::warning::Failed to process $file"
+    echo "::warning::Failed to process or apply patch to $file"
   fi
-
 done
 
 if [ "$MODIFIED" -gt 0 ]; then

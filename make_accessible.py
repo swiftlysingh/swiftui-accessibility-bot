@@ -1,7 +1,9 @@
 import os
 import sys
 import re
+import tempfile
 from openai import OpenAI
+import patch
 
 INJECTION_PATTERNS = [
     r"ignore.*instructions", r"disregard.*above", r"assistant.*role", r"user.*role",
@@ -85,7 +87,22 @@ def main():
         temperature=0.2
     )
     generated_code = response.choices[0].message.content
-    print(generated_code)
+    # Write the diff to a temporary file
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_patch:
+        tmp_patch.write(generated_code)
+        tmp_patch_path = tmp_patch.name
+
+    # Apply the patch
+    pset = patch.fromfile(tmp_patch_path)
+    if not pset:
+        print("::error::Failed to parse generated patch.", file=sys.stderr)
+        sys.exit(1)
+    root_dir = os.path.dirname(os.path.abspath(swift_file))
+    if pset.apply(root=root_dir):
+        print("Patch applied successfully!")
+    else:
+        print("::error::Failed to apply patch.", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
