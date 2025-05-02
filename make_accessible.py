@@ -95,9 +95,22 @@ def main():
     # Filter out lines that are not part of a valid unified diff
     diff_lines = []
     in_diff = False
+    expected_filename = os.path.basename(swift_file)
     for line in generated_code.splitlines():
-        if line.startswith('--- ') or line.startswith('+++ '):
+        # Normalize diff headers to match the actual filename
+        if line.startswith('--- '):
             in_diff = True
+            # Handle both '--- a/filename' and '--- filename'
+            if line.startswith('--- a/'):
+                line = f'--- {expected_filename}'
+            else:
+                line = f'--- {expected_filename}'
+        elif line.startswith('+++ '):
+            # Handle both '+++ b/filename' and '+++ filename'
+            if line.startswith('+++ b/'):
+                line = f'+++ {expected_filename}'
+            else:
+                line = f'+++ {expected_filename}'
         if in_diff:
             # Only allow valid diff lines or context lines
             if (
@@ -115,6 +128,7 @@ def main():
     if not filtered_diff.strip().startswith('---'):
         print("::error::OpenAI did not return a valid unified diff.", file=sys.stderr)
         sys.exit(1)
+
 
     # Write the filtered diff to a temporary file
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_patch:
