@@ -8,7 +8,10 @@ if __name__ == '__main__':
     swift_file = sys.argv[1]
     patch_file = sys.argv[2]
     pset = patch.fromfile(patch_file)
-    if pset.apply():
+    if not pset:
+        print("Failed to parse patch file.")
+        sys.exit(1)
+    if patch.apply(pset):
         print("Patch applied successfully!")
     else:
         print("Failed to apply patch.")
