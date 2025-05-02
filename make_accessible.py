@@ -3,7 +3,7 @@ import sys
 import re
 import tempfile
 from openai import OpenAI
-import patch
+import subprocess
 
 INJECTION_PATTERNS = [
     r"ignore.*instructions", r"disregard.*above", r"assistant.*role", r"user.*role",
@@ -122,21 +122,39 @@ def main():
 
 
     # Write the filtered diff to a temporary file
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_patch:
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".patch") as tmp_patch:
         tmp_patch.write(filtered_diff)
         tmp_patch_path = tmp_patch.name
 
-    # Apply the patch
-    pset = patch.fromfile(tmp_patch_path)
-    if not pset:
-        print("::error::Failed to parse generated patch.", file=sys.stderr)
+    # Apply the patch using the patch command-line utility
+    swift_file_abspath = os.path.abspath(swift_file)
+    root_dir = os.path.dirname(swift_file_abspath)
+
+    patch_command = ['patch', '-p0', '--input', tmp_patch_path]
+    print(f"Running patch command: {' '.join(patch_command)} in directory {root_dir}")
+
+    try:
+        result = subprocess.run(
+            patch_command,
+            cwd=root_dir,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print("Patch applied successfully using command!")
+    except subprocess.CalledProcessError as e:
+        print(f"::error::Failed to apply patch using command: {' '.join(patch_command)}", file=sys.stderr)
+        print(f"::error::Return code: {e.returncode}", file=sys.stderr)
+        print(f"::error::stdout: {e.stdout}", file=sys.stderr)
+        print(f"::error::stderr: {e.stderr}", file=sys.stderr)
+        print("::error::Patch content was:", file=sys.stderr)
+        print(filtered_diff, file=sys.stderr)
         sys.exit(1)
-    root_dir = os.path.dirname(os.path.abspath(swift_file))
-    if pset.apply(root=root_dir):
-        print("Patch applied successfully!")
-    else:
-        print("::error::Failed to apply patch.", file=sys.stderr)
+    except FileNotFoundError:
+        print("::error::'patch' command not found. Is it installed in the container?", file=sys.stderr)
         sys.exit(1)
+    finally:
+        os.remove(tmp_patch_path)
 
 if __name__ == "__main__":
     main()
