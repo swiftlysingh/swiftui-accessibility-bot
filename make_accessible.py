@@ -86,13 +86,12 @@ def main():
     prompt = generate_accessibility_prompt(swift_file, class_name, content)
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model="gpt-4-0125-preview",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": "You are a senior SwiftUI engineer and expert in iOS accessibility. First, list all missing or insufficient .accessibility* modifiers found in the provided SwiftUI view. Then, return the minimal patch-style instructions for adding the required .accessibility* modifiers, specifying the line number after which each modifier should be inserted and the code to insert. Do not output the full file, remove any code, or add commentary."},
             {"role": "user", "content": prompt}
         ],
-        temperature=0.2,
-        max_tokens=3000
+        temperature=0.2
     )
     generated_code = response.choices[0].message.content
     if not generated_code or is_potentially_injected(generated_code):
