@@ -72,8 +72,7 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
     --base "$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f3)" \
     --head "$BRANCH" \
     --title "$PR_TITLE" \
-    --body-file "$PR_BODY_FILE" \
-    --repo "$GITHUB_REPOSITORY"
+    --body "$PR_BODY_FILE"
   
   rm "$PR_BODY_FILE" # Clean up the temporary file
 
