@@ -61,20 +61,50 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
   echo "Creating Pull Request..."
 
   # Set PR title with previous commit message (before bot commit)
+  # HEAD is now the bot's commit. HEAD~1 is the commit before the bot's.
   PREV_COMMIT_MSG=$(git log --pretty=format:%s HEAD~1 -1)
   PR_TITLE="[Accessibility-Bot] Update accessibility for: $PREV_COMMIT_MSG"
 
-  PR_BODY_FILE=$(mktemp)
-  # Safely print the summary and diff to the temporary file
-  printf "%s\n\n%s" "$PR_BODY_SUMMARY" "$PR_BODY_DIFF" > "$PR_BODY_FILE"
+  # Construct PR Body
+  # MODIFIED_FILES_FOR_PR_BODY already contains formatted list of files
+  # DIFF_CONTENT was captured from 'git diff --staged' before the commit
+  PR_BODY_SUMMARY_TEXT="The following files were modified by the accessibility bot:\n$MODIFIED_FILES_FOR_PR_BODY"
+
+  PR_BODY_CONTENT_FILE=$(mktemp)
+  {
+    echo -e "$PR_BODY_SUMMARY_TEXT" # Use -e to interpret \n
+    echo ""
+    echo "<details><summary>View changes</summary>"
+    echo ""
+    echo "\`\`\`diff"
+    echo "$DIFF_CONTENT"
+    echo "\`\`\`"
+    echo ""
+    echo "</details>"
+  } > "$PR_BODY_CONTENT_FILE"
+
+  # Determine base branch more reliably
+  BASE_BRANCH_NAME=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@' 2>/dev/null)
+  if [ -z "$BASE_BRANCH_NAME" ]; then
+    echo "::warning::Could not determine base branch using 'git symbolic-ref'. Trying fallback: 'git remote show origin | grep HEAD | awk \\'{print \\$NF\\}''. "
+    BASE_BRANCH_NAME=$(git remote show origin | grep 'HEAD branch' | awk '{print $NF}')
+  fi
+  
+  if [ -z "$BASE_BRANCH_NAME" ]; then
+    echo "::error::Could not determine the base branch name. Exiting."
+    rm "$PR_BODY_CONTENT_FILE" # Clean up temp file
+    exit 1
+  fi
+  echo "Base branch for PR: $BASE_BRANCH_NAME"
+  echo "Head branch for PR: $BRANCH"
 
   gh pr create \
-    --base "$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f3)" \
+    --base "$BASE_BRANCH_NAME" \
     --head "$BRANCH" \
     --title "$PR_TITLE" \
-    --body "$PR_BODY_FILE"
+    --body-file "$PR_BODY_CONTENT_FILE" # Corrected to --body-file
   
-  rm "$PR_BODY_FILE" # Clean up the temporary file
+  rm "$PR_BODY_CONTENT_FILE" # Clean up the temporary file
 
   echo "Pull Request created successfully."
   echo "branch-name=$BRANCH" >> "$GITHUB_OUTPUT"
