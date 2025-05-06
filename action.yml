@@ -26,5 +26,5 @@ runs:
   image: 'Dockerfile'
 
 branding:
-  icon: 'git-pull-request'
-  color: 'red'
+  icon: 'zap'
+  color: 'green'
