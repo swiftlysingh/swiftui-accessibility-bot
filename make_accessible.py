@@ -4,8 +4,9 @@ import re
 import difflib
 from openai import OpenAI
 
-def create_system_prompt(file_content): # MODIFIED: Added file_content argument
-    return f"""You are a senior SwiftUI engineer and expert in iOS accessibility. You specialize in refactoring SwiftUI views to conform to Apple's Human Interface Guidelines (HIG) and WCAG 2.1, with full support for VoiceOver, Voice Control, keyboard navigation, Dynamic Type, Assistive Access, and UI testing best practices.
+def create_system_prompt():
+    return f"""
+You are a senior SwiftUI engineer and expert in iOS accessibility. You specialize in refactoring SwiftUI views to conform to Apple's Human Interface Guidelines (HIG) and WCAG 2.1, with full support for VoiceOver, Voice Control, keyboard navigation, Dynamic Type, Assistive Access, and UI testing best practices.
 
 ## Task Overview:
 Before making any modifications to the provided SwiftUI view, **analyze the file** using a technique similar to `app.performAccessibilityAudit()` in UI tests.  
@@ -25,11 +26,6 @@ First, **identify and list all accessibility violations** that would likely occu
   - Grouped views missing `.accessibilityElement(children: .combine)`
   - Missing `.accessibilitySortPriority(...)` for reading order management
 
-- **Assistive Access Violations**:
-  - Small tap targets (<44x44 points)
-  - Use of non-standard gestures or non-standard SwiftUI controls
-  - Layout breakage at large Dynamic Type sizes (e.g., `.extraExtraExtraLarge`)
-
 ---
 
 ## Prompting Techniques to Use:
@@ -38,42 +34,23 @@ First, **identify and list all accessibility violations** that would likely occu
 
 ---
 
-## Accessibility Refactor Objectives:
-After identifying violations:
-1. Regenerate the SwiftUI view with **full accessibility support applied**.
-2. Ensure:
-   - All UI elements have meaningful `.accessibilityLabel()` and `.accessibilityHint()`.
-   - For example: Use hints like "Tap \\(answerChoice)" so the user can say "Tap Deep Dish Pizza."
-   - Visible label text appears at the beginning of custom accessibility labels if changed.
-   - Full support for Dynamic Type using `.font(.preferredFont(forTextStyle:))`, `.system(...) relativeTo:` or `.custom(..., relativeTo:)`.
-   - Keyboard navigation is fully supported using `.focusable(true)`.
-   - Layout does not break under large accessibility text settings.
-
----
-
-## Explainability Requirements:
-- For **each issue found**, cite the relevant WCAG 2.1 success criterion or HIG recommendation.
-- Explanations must be in **plain English**, suitable for junior developers and designers.
-
----
-
 ## Ethical Requirements:
 - Accessible labels and hints must be **inclusive, unbiased, respectful**, and use **universal phrasing**.
 
----
+**You must not remove, modify, or add any other code, view modifiers, or logic. Only append these accessibility modifiers to existing views as needed.**
 
 ## Output Requirements:
-1. **First**: List all accessibility violations found in the original SwiftUI view.
-2. **Then**: Return the fully updated SwiftUI code, applying changes with **in-line comments** explaining each improvement.
-3. **Output the updated view ONLY** — do not summarize or add additional commentary after the code.
-
----
+- Output **only** the complete, modified Swift file content enclosed in a single Markdown code block like this:
+```swift
+[Your modified Swift code here]
+```
+- Do not output any explanations, lists, commentary, or diffs—only the final Swift code block.
+- Ensure the output is valid Swift code.
 
 ## Provided File to Audit and Refactor:
-
 🔽 SwiftUI view to refactor:
 START_OF_FILE
-{file_content}
+{{file_content}}
 END_OF_FILE
 """
 
@@ -102,13 +79,15 @@ def main():
         print(f"::error::File '{swift_file}' is empty.", file=sys.stderr)
         sys.exit(1)
 
-    system_prompt_content = create_system_prompt(original_content)
+    system_prompt = create_system_prompt()
+    user_prompt = original_content 
 
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
         model="gpt-4.1",
         messages=[
-            {"role": "system", "content": system_prompt_content}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
         ],
         temperature=0.2
     )
