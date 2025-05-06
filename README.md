@@ -11,6 +11,15 @@ This GitHub Action automatically reviews and applies accessibility improvements 
     -   Process only SwiftUI files that were changed in the current commit.
 -   **Pull Request Creation**: Automatically creates a pull request with the applied changes.
 
+## Inspiration
+
+This project was inspired by the talk and work of Allison McEntire on accessibility. You can find more about her insights here: [gist.github.com/allisonpaigemcentire](https://gist.github.com/allisonpaigemcentire/719b856796d599e9d758e8a1343b5bd8).
+
+## Important Considerations
+
+-   **Code Modification**: This bot directly modifies your codebase by applying accessibility improvements. It is **highly recommended** that you carefully review all changes proposed in the pull requests created by this bot before merging them.
+-   **Model Behavior**: The quality and nature of the suggestions depend on the OpenAI model used. While the bot aims to apply only additive accessibility modifiers, always verify the changes.
+
 ## Prerequisites
 
 1.  **OpenAI API Key**: You need an OpenAI API key with access to the desired models. This key should be stored as a secret in your GitHub repository (e.g., `OPENAI_API_KEY`).
@@ -43,10 +52,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Recommended for processing changed files or reliable base branch detection
+          # fetch-depth: 0 is recommended to fetch all history.
+          # This is crucial if using `process_changed_files_only: true` 
+          # or if your action needs to reliably determine the base branch for PRs.
+          fetch-depth: 0 
 
       - name: Run SwiftUI Accessibility Bot
         uses: your-username/swiftui-accessibility-bot@v1 # Replace with your action's path or version
+        env:
+          GH_TOKEN: ${{ github.token }} # Pass the GitHub token for PR creation and push
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           # Optional: Specify a different OpenAI model
