@@ -1,6 +1,6 @@
 name: 'SwiftUI Accessibility Bot'
 description: 'Auto-applies LLM accessibility improvements to SwiftUI views and creates a PR.'
-author: 'Your Name'
+author: 'Pushpinder Pal Singh'
 
 inputs:
   openai_api_key:
