@@ -59,6 +59,10 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
   # Create Pull Request using GitHub CLI
   echo "Creating Pull Request..."
 
+  # Set PR title with previous commit message (before bot commit)
+  PREV_COMMIT_MSG=$(git log --pretty=format:%s HEAD~1 -1)
+  PR_TITLE="[Accessibility-Bot] Update accessibility for: $PREV_COMMIT_MSG"
+
   PR_BODY_FILE=$(mktemp)
   # Safely print the summary and diff to the temporary file
   printf "%s\n\n%s" "$PR_BODY_SUMMARY" "$PR_BODY_DIFF" > "$PR_BODY_FILE"
