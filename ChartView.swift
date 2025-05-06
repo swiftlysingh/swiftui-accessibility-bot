@@ -27,10 +27,12 @@ struct ChartView: View {
         .accessibilityHint(Text("Double tap to select this category"))
         .accessibilityIdentifier("BarMark_\(category.name)")
         .accessibilityAddTraits(.isButton)
+        .accessibilitySortPriority(1)
 	  }
       .accessibilityElement(children: .contain)
       .accessibilityLabel(Text("Category amounts chart"))
       .accessibilityHint(Text("Bar chart showing the amount for each category. Swipe to explore categories."))
+      .accessibilityIdentifier("ChartView_Chart")
 	  .chartPlotStyle { plotArea in
 		plotArea
 		  .background(Color(.systemFill))
@@ -64,6 +66,8 @@ struct ChartView: View {
 	}
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("ChartView_VStack")
+    .accessibilityLabel(Text("Chart of category amounts"))
+    .accessibilityHint(Text("Displays a bar chart of categories and their amounts."))
   }
 }
 
