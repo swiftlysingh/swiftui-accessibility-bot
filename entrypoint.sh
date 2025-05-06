@@ -56,16 +56,8 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
   git commit -m "feat(bot): Apply AI-suggested accessibility improvements"
   git push "https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$BRANCH"
 
-  # Construct PR Body
-  PR_TITLE="🤖 Apply AI Accessibility Improvements"
-  # Use the corrected variable for the list of files
-  PR_BODY_SUMMARY="**Summary:**\n\nThis PR automatically applies accessibility improvements suggested by an AI model.\n\n**Files Modified ($MODIFIED_COUNT):**\n$MODIFIED_FILES_FOR_PR_BODY"
-  PR_BODY_DIFF="**Diff:**\n\`\`\`diff\n$DIFF_CONTENT\n\`\`\`"
-
   # Create Pull Request using GitHub CLI
   echo "Creating Pull Request..."
-  # Use GITHUB_TOKEN for authentication with gh cli
-  echo "$GITHUB_TOKEN" | gh auth login --with-token
 
   PR_BODY_FILE=$(mktemp)
   # Safely print the summary and diff to the temporary file

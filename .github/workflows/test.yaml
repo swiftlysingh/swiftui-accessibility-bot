@@ -17,4 +17,3 @@ jobs:
         uses: ./
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Corrected: underscore
-          github_token: ${{ secrets.GITHUB_TOKEN }}    # Corrected: underscore
