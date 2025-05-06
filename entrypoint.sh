@@ -8,14 +8,14 @@ else
   echo "OPENAI_API_KEY is set."
 fi
 # GITHUB_TOKEN is an environment variable automatically provided by GitHub Actions
-if [ -z "$GITHUB_TOKEN" ]; then 
+if [ -z "$INPUT_GITHUB_TOKEN" ]; then 
   echo "::error::GITHUB_TOKEN is not set! This should be automatically provided by GitHub Actions."
 else
   echo "GITHUB_TOKEN is set."
 fi
 
 export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
-export GH_TOKEN="$GITHUB_TOKEN" # GH_TOKEN is used by gh cli, set it from the default GITHUB_TOKEN
+export GH_TOKEN="$INPUT_GITHUB_TOKEN" # GH_TOKEN is used by gh cli, set it from the default GITHUB_TOKEN
 export INPUT_OPENAI_MODEL_NAME="${INPUT_OPENAI_MODEL_NAME:-gpt-4.1}" # Pass model name to script
 export INPUT_PROCESS_CHANGED_FILES_ONLY="${INPUT_PROCESS_CHANGED_FILES_ONLY:-false}" # Pass changed files flag to script
 
