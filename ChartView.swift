@@ -22,6 +22,10 @@ struct ChartView: View {
 		  x: .value("Amount", category.amount)
 		)
 		.foregroundStyle(category.color)
+        .accessibilityLabel(Text(category.name))
+        .accessibilityValue(Text("\(category.amount, specifier: "%.2f")"))
+        .accessibilityHint(Text("Double tap to select \(category.name)"))
+        .accessibilityIdentifier("BarMark_\(category.name)")
 	  }
 	  .chartPlotStyle { plotArea in
 		plotArea
@@ -31,6 +35,10 @@ struct ChartView: View {
 	  .chartXScale(domain: 0...totalAmount)
 	  .chartXAxis(.hidden)
 	  .frame(height: 25)
+      .accessibilityElement(children: .contain)
+      .accessibilityLabel(Text("Category amounts bar chart"))
+      .accessibilityHint(Text("Shows the distribution of amounts by category. Double tap a bar to select a category."))
+      .accessibilityIdentifier("CategoryBarChart")
 	  .chartOverlay { proxy in
 		GeometryReader { geometry in
 		  Rectangle().fill(.clear).contentShape(Rectangle())
@@ -50,6 +58,7 @@ struct ChartView: View {
 				}
 			  }
 			}
+            .accessibilityHidden(true)
 		}
 	  }
 	}
