@@ -26,6 +26,7 @@ struct ChartView: View {
         .accessibilityValue(Text("\(category.amount, specifier: "%.0f")"))
         .accessibilityHint(Text("Double tap to select this category"))
         .accessibilityIdentifier("BarMark_\(category.name)")
+        .accessibilityAddTraits(.isButton)
 	  }
       .accessibilityElement(children: .contain)
       .accessibilityLabel(Text("Category amounts chart"))
