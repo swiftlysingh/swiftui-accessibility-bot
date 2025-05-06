@@ -22,6 +22,11 @@ struct ChartView: View {
 		  x: .value("Amount", category.amount)
 		)
 		.foregroundStyle(category.color)
+        .accessibilityLabel(Text(category.name))
+        .accessibilityValue(Text("\(category.amount, specifier: "%.2f")"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text("Double tap to select this category"))
+        .accessibilityIdentifier("BarMark_\(category.name)")
 	  }
 	  .chartPlotStyle { plotArea in
 		plotArea
@@ -50,9 +55,12 @@ struct ChartView: View {
 				}
 			  }
 			}
+            .accessibilityHidden(true)
 		}
 	  }
 	}
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier("ChartView_VStack")
   }
 }
 
