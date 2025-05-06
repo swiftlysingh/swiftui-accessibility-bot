@@ -16,6 +16,7 @@ fi
 
 export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
 export GITHUB_TOKEN="$INPUT_GITHUB_TOKEN"
+export GH_TOKEN="$GITHUB_TOKEN"
 
 # Find all SwiftUI files
 FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
