@@ -15,6 +15,8 @@ jobs:
           fetch-depth: 0 # Required to get all history for git diff and base branch detection
       - name: Run Accessibility Bot
         uses: ./
+        env:
+          GH_TOKEN: ${{ github.token }} # Make GITHUB_TOKEN available as GH_TOKEN
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           # openai_model_name: 'gpt-4-turbo' # Example of using a custom model

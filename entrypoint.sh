@@ -7,15 +7,17 @@ if [ -z "$INPUT_OPENAI_API_KEY" ]; then
 else
   echo "OPENAI_API_KEY is set."
 fi
-# GITHUB_TOKEN is an environment variable automatically provided by GitHub Actions
-if [ -z "$INPUT_GITHUB_TOKEN" ]; then 
-  echo "::error::GITHUB_TOKEN is not set! This should be automatically provided by GitHub Actions."
+
+# GH_TOKEN is expected to be in the environment, passed from the workflow
+if [ -z "$GH_TOKEN" ]; then
+  echo "::error::GH_TOKEN is not set! It should be passed from the workflow env context (e.g., env: GH_TOKEN: ${{ github.token }})."
+  exit 1 # Exit if GH_TOKEN is not available
 else
-  echo "GITHUB_TOKEN is set."
+  echo "GH_TOKEN is set."
 fi
 
 export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
-export GH_TOKEN="$INPUT_GITHUB_TOKEN" # GH_TOKEN is used by gh cli, set it from the default GITHUB_TOKEN
+export GH_TOKEN # Ensure GH_TOKEN is exported for gh cli and git operations
 export INPUT_OPENAI_MODEL_NAME="${INPUT_OPENAI_MODEL_NAME:-gpt-4.1}" # Pass model name to script
 export INPUT_PROCESS_CHANGED_FILES_ONLY="${INPUT_PROCESS_CHANGED_FILES_ONLY:-false}" # Pass changed files flag to script
 
@@ -75,7 +77,7 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
   DIFF_CONTENT=$(git diff --staged) # Get diff of staged changes
 
   git commit -m "feat(bot): Apply AI-suggested accessibility improvements"
-  git push "https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$BRANCH"
+  git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$BRANCH" # Use GH_TOKEN for push
 
   # Create Pull Request using GitHub CLI
   echo "Creating Pull Request..."
