@@ -7,20 +7,40 @@ if [ -z "$INPUT_OPENAI_API_KEY" ]; then
 else
   echo "OPENAI_API_KEY is set."
 fi
-# Correctly check for INPUT_GITHUB_TOKEN
-if [ -z "$INPUT_GITHUB_TOKEN" ]; then
-  echo "::error::GITHUB_TOKEN is not set!"
+# GITHUB_TOKEN is an environment variable automatically provided by GitHub Actions
+if [ -z "$GITHUB_TOKEN" ]; then 
+  echo "::error::GITHUB_TOKEN is not set! This should be automatically provided by GitHub Actions."
 else
   echo "GITHUB_TOKEN is set."
 fi
 
 export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
-export GITHUB_TOKEN="$INPUT_GITHUB_TOKEN"
-export GH_TOKEN="$GITHUB_TOKEN"
+export GH_TOKEN="$GITHUB_TOKEN" # GH_TOKEN is used by gh cli, set it from the default GITHUB_TOKEN
+export INPUT_OPENAI_MODEL_NAME="${INPUT_OPENAI_MODEL_NAME:-gpt-4.1}" # Pass model name to script
+export INPUT_PROCESS_CHANGED_FILES_ONLY="${INPUT_PROCESS_CHANGED_FILES_ONLY:-false}" # Pass changed files flag to script
 
-# Find all SwiftUI files
-FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
-echo "SwiftUI files found: $FILES"
+# Find SwiftUI files
+if [ "$INPUT_PROCESS_CHANGED_FILES_ONLY" = "true" ]; then
+  echo "Processing only changed Swift files from the last commit."
+  # Get files changed in the last commit, filter by .swift extension, and ensure they exist and contain 'import SwiftUI'
+  # Ensure git commands run in the correct directory and handle cases where no files were changed.
+  # Fetch enough history to be able to diff HEAD^
+  git fetch --depth=2 || echo "Fetch failed, proceeding with local history. This might fail if history is too shallow."
+  FILES=$(git diff --name-only HEAD^ HEAD -- '*.swift' | xargs -I {} sh -c 'test -f "$1" && grep -q "import SwiftUI" "$1" && echo "$1"' _ {} || echo "")
+  if [ -z "$FILES" ]; then
+    echo "No changed Swift files containing 'import SwiftUI' found in the last commit."
+  else
+    echo "Changed SwiftUI files to process: $FILES"
+  fi
+else
+  echo "Processing all SwiftUI files in the repository."
+  FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
+  if [ -z "$FILES" ]; then
+    echo "No SwiftUI files found in the repository."
+  fi
+fi
+
+echo "SwiftUI files to process: $FILES"
 
 MODIFIED_FILES_FOR_PR_BODY="" # Changed variable name for clarity
 MODIFIED_COUNT=0

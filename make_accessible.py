@@ -66,6 +66,8 @@ def extract_swift_code(llm_output):
 def main():
     swift_file = os.environ.get("INPUT_SWIFT_FILE_PATH")
     api_key = os.environ.get("OPENAI_API_KEY")
+    model_name = os.environ.get("INPUT_OPENAI_MODEL_NAME", "gpt-4.1") # Use model from env or default
+
     if not swift_file or not api_key:
         print("::error::Missing required environment variables.", file=sys.stderr)
         sys.exit(1)
@@ -84,7 +86,7 @@ def main():
 
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model="gpt-4.1",
+        model=model_name, # Use the model_name variable
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
