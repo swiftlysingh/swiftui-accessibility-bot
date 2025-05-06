@@ -22,7 +22,14 @@ struct ChartView: View {
 		  x: .value("Amount", category.amount)
 		)
 		.foregroundStyle(category.color)
+        .accessibilityLabel(Text(category.name))
+        .accessibilityValue(Text("\(category.amount, specifier: "%.0f")"))
+        .accessibilityHint(Text("Double tap to select this category"))
+        .accessibilityIdentifier("BarMark_\(category.name)")
 	  }
+      .accessibilityElement(children: .contain)
+      .accessibilityLabel(Text("Category amounts chart"))
+      .accessibilityHint(Text("Bar chart showing the amount for each category. Swipe to explore categories."))
 	  .chartPlotStyle { plotArea in
 		plotArea
 		  .background(Color(.systemFill))
@@ -50,9 +57,12 @@ struct ChartView: View {
 				}
 			  }
 			}
+            .accessibilityHidden(true)
 		}
 	  }
 	}
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier("ChartView_VStack")
   }
 }
 
