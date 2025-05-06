@@ -16,5 +16,4 @@ jobs:
       - name: Run Accessibility Bot
         uses: ./
         with:
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Corrected: underscore
-          github_token: ${{ secrets.PAT_TOKEN }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }} 
