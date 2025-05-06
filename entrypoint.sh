@@ -72,7 +72,7 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
 
   PR_BODY_CONTENT_FILE=$(mktemp)
   {
-    echo -e "$PR_BODY_SUMMARY_TEXT" # Use -e to interpret \n
+    echo "$PR_BODY_SUMMARY_TEXT"
     echo ""
     echo "<details><summary>View changes</summary>"
     echo ""
