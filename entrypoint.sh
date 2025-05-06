@@ -3,14 +3,15 @@ set -e
 
 # Debug: print environment variable presence
 if [ -z "$INPUT_OPENAI_API_KEY" ]; then
-  echo "::error::INPUT_OPENAI_API_KEY is not set!"
+  echo "::error::OPENAI_API_KEY is not set!"
 else
-  echo "INPUT_OPENAI_API_KEY is set."
+  echo "OPENAI_API_KEY is set."
 fi
+# Correctly check for INPUT_GITHUB_TOKEN
 if [ -z "$INPUT_GITHUB_TOKEN" ]; then
-  echo "::error::INPUT_GITHUB_TOKEN is not set!"
+  echo "::error::GITHUB_TOKEN is not set!"
 else
-  echo "INPUT_GITHUB_TOKEN is set."
+  echo "GITHUB_TOKEN is set."
 fi
 
 export OPENAI_API_KEY="$INPUT_OPENAI_API_KEY"
@@ -20,7 +21,7 @@ export GITHUB_TOKEN="$INPUT_GITHUB_TOKEN"
 FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
 echo "SwiftUI files found: $FILES"
 
-MODIFIED_FILES_LIST=""
+MODIFIED_FILES_FOR_PR_BODY="" # Changed variable name for clarity
 MODIFIED_COUNT=0
 
 for file in $FILES; do
@@ -28,7 +29,12 @@ for file in $FILES; do
   # Use exit code to check if make_accessible.py made changes (exits 0 if changes applied)
   if python /app/make_accessible.py; then
     echo "Accessibility additions applied to $file"
-    MODIFIED_FILES_LIST="$MODIFIED_FILES_LIST- $file\\n"
+    if [ -z "$MODIFIED_FILES_FOR_PR_BODY" ]; then
+      MODIFIED_FILES_FOR_PR_BODY="- $file"
+    else
+      # Append with a literal newline character for proper Markdown list formatting
+      MODIFIED_FILES_FOR_PR_BODY="$MODIFIED_FILES_FOR_PR_BODY\n- $file"
+    fi
     MODIFIED_COUNT=$((MODIFIED_COUNT+1))
   else
     # make_accessible.py exits 1 if no changes or only ignored changes were made
@@ -52,23 +58,27 @@ if [ "$MODIFIED_COUNT" -gt 0 ]; then
 
   # Construct PR Body
   PR_TITLE="🤖 Apply AI Accessibility Improvements"
-  # Use printf for potentially safer multi-line variable content in PR_BODY
-  # The heredoc method is generally fine, but printf is more explicit with newlines.
-  PR_BODY_SUMMARY="**Summary:**\n\nThis PR automatically applies accessibility improvements suggested by an AI model.\n\n**Files Modified ($MODIFIED_COUNT):**\n$MODIFIED_FILES_LIST"
+  # Use the corrected variable for the list of files
+  PR_BODY_SUMMARY="**Summary:**\n\nThis PR automatically applies accessibility improvements suggested by an AI model.\n\n**Files Modified ($MODIFIED_COUNT):**\n$MODIFIED_FILES_FOR_PR_BODY"
   PR_BODY_DIFF="**Diff:**\n\`\`\`diff\n$DIFF_CONTENT\n\`\`\`"
-  PR_BODY="${PR_BODY_SUMMARY}\n\n${PR_BODY_DIFF}"
-
 
   # Create Pull Request using GitHub CLI
   echo "Creating Pull Request..."
   # Use GITHUB_TOKEN for authentication with gh cli
   echo "$GITHUB_TOKEN" | gh auth login --with-token
+
+  PR_BODY_FILE=$(mktemp)
+  # Safely print the summary and diff to the temporary file
+  printf "%s\n\n%s" "$PR_BODY_SUMMARY" "$PR_BODY_DIFF" > "$PR_BODY_FILE"
+
   gh pr create \
     --base "$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f3)" \
     --head "$BRANCH" \
     --title "$PR_TITLE" \
-    --body "$PR_BODY" \
+    --body-file "$PR_BODY_FILE" \
     --repo "$GITHUB_REPOSITORY"
+  
+  rm "$PR_BODY_FILE" # Clean up the temporary file
 
   echo "Pull Request created successfully."
   echo "branch-name=$BRANCH" >> "$GITHUB_OUTPUT"
