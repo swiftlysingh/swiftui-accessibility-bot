@@ -24,19 +24,17 @@ export INPUT_PROCESS_CHANGED_FILES_ONLY="${INPUT_PROCESS_CHANGED_FILES_ONLY:-fal
 # Find SwiftUI files
 if [ "$INPUT_PROCESS_CHANGED_FILES_ONLY" = "true" ]; then
   echo "Processing only changed Swift files from the last commit."
-  # Get files changed in the last commit, filter by .swift extension, and ensure they exist and contain 'import SwiftUI'
-  # Ensure git commands run in the correct directory and handle cases where no files were changed.
-  # Fetch enough history to be able to diff HEAD^
+  # Get files changed in the last commit, filter by .swift extension, and ensure they exist and contain SwiftUI view declarations
   git fetch --depth=2 || echo "Fetch failed, proceeding with local history. This might fail if history is too shallow."
-  FILES=$(git diff --name-only HEAD^ HEAD -- '*.swift' | xargs -I {} sh -c 'test -f "$1" && grep -q "import SwiftUI" "$1" && echo "$1"' _ {} || echo "")
+  FILES=$(git diff --name-only HEAD^ HEAD -- '*.swift' | xargs -I {} sh -c 'test -f "$1" && grep -q "import SwiftUI" "$1" && grep -q "struct.*:.*View" "$1" && echo "$1"' _ {} || echo "")
   if [ -z "$FILES" ]; then
-    echo "No changed Swift files containing 'import SwiftUI' found in the last commit."
+    echo "No changed Swift files containing SwiftUI views found in the last commit."
   else
     echo "Changed SwiftUI files to process: $FILES"
   fi
 else
   echo "Processing all SwiftUI files in the repository."
-  FILES=$(find . -name '*.swift' | xargs grep -l 'import SwiftUI')
+  FILES=$(find . -name '*.swift' | xargs grep -l "import SwiftUI" | xargs grep -l "struct.*:.*View" || echo "")
   if [ -z "$FILES" ]; then
     echo "No SwiftUI files found in the repository."
   fi

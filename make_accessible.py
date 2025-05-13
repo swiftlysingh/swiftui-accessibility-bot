@@ -86,7 +86,7 @@ def main():
 
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model=model_name, # Use the model_name variable
+        model=model_name,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
